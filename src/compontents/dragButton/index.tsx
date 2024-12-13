@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import './index.css'; // 引入样式
 
-const DragButton = ({vertified, setVertified} : { vertified: boolean; setVertified: (val: boolean) => void }) => {
+const DragButton = ({verified, setVerified} : { verified: boolean; setVerified: (val: boolean) => void }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -14,7 +14,7 @@ const DragButton = ({vertified, setVertified} : { vertified: boolean; setVertifi
   // 处理鼠标或触摸开始事件
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    if (vertified) setVertified(false);
+    if (verified) setVerified(false);
     setDragging(true);
   };
 
@@ -42,7 +42,7 @@ const DragButton = ({vertified, setVertified} : { vertified: boolean; setVertifi
   const handleEnd = () => {
     if (position >= 0.8) {
       setPosition(1); // 滑动超过 80%，移动到终点
-      setVertified(true);
+      setVerified(true);
     } else {
       setPosition(0); // 回弹到起点
     }
@@ -96,7 +96,7 @@ const DragButton = ({vertified, setVertified} : { vertified: boolean; setVertifi
         onMouseDown={handleStart}
         onTouchStart={handleStart}
       >
-        {!vertified ? `>>` : '✔️'}
+        {!verified ? `>>` : '✔️'}
       </button>
     </div>
   );
