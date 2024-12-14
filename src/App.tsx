@@ -1,6 +1,7 @@
 import { Input, Button } from 'antd';
 import DragButton from "./compontents/dragButton";
-import { checkEmail, checkCode, ResendCode } from './api';
+import { checkEmail, checkCode, ResendCode, submitPassword } from './api';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 import './App.css'
 import { useState } from 'react';
@@ -81,10 +82,14 @@ const IdentityEmail = ({ done }: { done: () => void }) => {
   )
 }
 
-const RetrievePassword = () => {
+const RetrievePassword = ({ done }: { done: () => void }) => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [notInputYet, setNotInputYet] = useState(true);
+  const [showError, setShowError] = useState(false);
+  const [showConfirmError, setShowConfirmError] = useState(false);
+
 
   const getPasswordTypeLength = (password: string) => [
     /[a-z]/.test(password), // Lowercase letters
@@ -93,35 +98,69 @@ const RetrievePassword = () => {
     /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password), // Symbols
   ].filter(Boolean).length;
 
-  const hasTwoTypes =  getPasswordTypeLength(password) >= 2;
-
   const validatePassword = (value: string) => {
     const passwordTypeLength = getPasswordTypeLength(value)
     let strength = 0;
     if (value.length >= 6 && value.length <= 20) strength++;
-    if (hasTwoTypes) strength++;
+    if (passwordTypeLength >= 2) strength++;
     if (passwordTypeLength >= 3) strength++;
     setPasswordStrength(strength);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+    if (notInputYet) setNotInputYet(false);
     setPassword(value);
+    setShowConfirmError(false);
+    setShowError(password.length > 20 ? true : false)
     validatePassword(value);
   };
 
   const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const confirmPassword = e.target.value;
     setConfirmPassword(e.target.value);
+    setShowConfirmError((confirmPassword.length > password.length)
+  || (confirmPassword.length === password.length && password !== confirmPassword))
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+    if (getValidList(password).find(({ status }) => status !== 'valid')) {
+      setShowError(true);
       return;
     }
-    alert("Password successfully updated!");
+    if (password !== confirmPassword) {
+      setShowConfirmError(true);
+      return;
+    }
+    submitPassword(password).then(({ data }) => {
+      if (data.code !== 200) return Promise.reject(data.message);
+      done();
+    });
   };
+
+  const getValidList = (password: string) => {
+    return [{
+      text: '6-20 characters',
+      status: ((password) => {
+        if (password.length < 6) return 'empty'
+        return password.length >= 6 && password.length <= 20 ? "valid" : "invalid"
+      })(password)
+    }, {
+      text: 'Can contain only letters, numbers and punctuation marks (except spaces)',
+      status: ((password) => {
+        if (password.length < 1) return 'empty'
+        return /^[A-Za-z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/.test(password) ? "valid" : "invalid"
+      })(password)
+    }, {
+      text: 'Uppercase letters, lowercase letters, numbers and punctuation includes at least 2',
+      status: ((password) => {
+        if (password.length < 1) return 'empty'
+        return getPasswordTypeLength(password) >= 2 ? "valid" : "invalid"
+      })(password)
+    },
+  ]
+  }
 
   return (
     <div className="retrieve-password">
@@ -131,9 +170,12 @@ const RetrievePassword = () => {
             type="password"
             value={password}
             placeholder='Enter new password'
+            status={showError ? 'error' : ''}
             onChange={handlePasswordChange}
           />
-          <div className="password-strength">
+          {showError ? <div className='error-tip'>The setting does not meet the requirements, please reset</div> : null}
+          {notInputYet ? null
+              : <><div className="password-strength">
             <span>Safety level:</span>
             <div className="strength-bar">
               <div className={`strength-level ${passwordStrength >= 1 ? "level-1" : ""}`}></div>
@@ -142,29 +184,23 @@ const RetrievePassword = () => {
             </div>
           </div>
           <ul className="password-criteria">
-            <li className={password.length >= 6 && password.length <= 20 ? "valid" : "invalid"}>
-              6-20 characters
-            </li>
-            <li className={/^[A-Za-z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+$/.test(password) ? "valid" : "invalid"}>
-              Can contain only letters, numbers and punctuation marks (except spaces)
-            </li>
-            <li
-              className={
-                hasTwoTypes
-                  ? "valid"
-                  : "invalid"
-              }
-            >
-              Uppercase letters, lowercase letters, numbers and punctuation includes at least 2
-            </li>
-          </ul>
+            {getValidList(password).map(({ text, status }) => (
+                <li className={status}>
+                  {status !== 'invalid' ? <CheckCircleOutlined /> : <CloseCircleOutlined/>}
+                  {text}
+                </li>
+              ))
+            }
+          </ul></>}
           <Input
             type="password"
             id="confirm-password"
             value={confirmPassword}
+            status={showConfirmError? 'error' : ''}
             onChange={handleConfirmPasswordChange}
             placeholder='Re-enter new password'
           />
+          {showConfirmError ? <div className='error-tip'>Password does not match</div> : null}
         <Button className="btn-submit" onClick={handleSubmit} type='primary'>
           Submit
         </Button>
@@ -172,12 +208,30 @@ const RetrievePassword = () => {
   );
 };
 
+const Successed = () => {
+  return (
+    <div className='successed-wrap'>
+      <CheckCircleOutlined />
+      <h2 className='title'>Password retrieved successfully!</h2>
+      <div className='subtitle'>Please remember your new password</div>
+      <Button className="btn-sign" onClick={() => {
+        window.location.href = '/'
+      }} type='primary'>
+          Sign in now
+      </Button>
+    </div>
+  )
+}
+
 function App() {
-  const [isVerified, setIsVerified] = useState(true);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isDone, setIsDone] = useState(false);
   return (
     <>
-    {isVerified
-    ? <RetrievePassword />
+    {isDone
+    ? <Successed/>
+    : isVerified
+    ? <RetrievePassword done={() => setIsDone(true)}/>
     : <IdentityEmail done={() => setIsVerified(true)} />   
     }
       

@@ -22,3 +22,9 @@ export const ResendCode = (email: string) => {
     data: { email }
   })
 }
+
+export const submitPassword = (password: string) => {
+  return axios.post<responseDataType>('/api/submit-password', {
+    data: { password }
+  })
+}

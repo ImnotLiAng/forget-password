@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { DoubleRightOutlined, CheckOutlined } from '@ant-design/icons';
 import './index.css'; // 引入样式
 
 const DragButton = ({verified, setVerified} : { verified: boolean; setVerified: (val: boolean) => void }) => {
@@ -19,6 +20,7 @@ const DragButton = ({verified, setVerified} : { verified: boolean; setVerified: 
   };
 
   const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     if (!dragging || !containerRef.current) return;
 
     // 获取触摸点或鼠标点的 X 坐标
@@ -50,6 +52,10 @@ const DragButton = ({verified, setVerified} : { verified: boolean; setVerified: 
     setDragging(false);
   };
 
+  useEffect(() => {
+    setPosition(0);
+  }, [containerRef.current, buttonRef.current])
+
   return (
     <div
       ref={containerRef}
@@ -60,26 +66,19 @@ const DragButton = ({verified, setVerified} : { verified: boolean; setVerified: 
       onTouchMove={handleMove}
       onTouchEnd={handleEnd}
       onTouchCancel={handleEnd}
-      style={{
-        width: '100%',
-        height: '50px',
-        position: 'relative',
-        backgroundColor: '#e0e0e0',
-        borderRadius: '5px',
-        overflow: 'hidden',
-      }}
     >
-      Please slide to vertify
+      {dragging ? '' : 'Please slide to vertify'}
       {/* 动态背景 */}
       <div
         className="drag-background"
         style={{
           position: 'absolute',
           top: 0,
-          left: 0,
+          left: '-100%',
           height: '100%',
-          width: `${position * 100}%`,
-          transition: dragging ? 'none' : 'width 0.3s ease-in-out',
+          width: `100%`,
+          transform: `translateX(calc(${position * (containerWidth - buttonWidth)}px))`,
+          transition: dragging ? 'none' : 'transform 0.3s ease-in-out',
         }}
       />
       {/* 按钮 */}
@@ -96,7 +95,7 @@ const DragButton = ({verified, setVerified} : { verified: boolean; setVerified: 
         onMouseDown={handleStart}
         onTouchStart={handleStart}
       >
-        {!verified ? `>>` : '✔️'}
+        {!verified ? <DoubleRightOutlined /> : <CheckOutlined />}
       </button>
     </div>
   );

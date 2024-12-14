@@ -13,14 +13,14 @@ export default [
       const res = {
        ...baseRes
       }
-      if (query.code !== '123456@qq.com') res.code = 401
+      if (query.email !== '123456@qq.com') res.code = 401
       return res;
     },
   },
   {
     url: '/api/check-code',
     method: 'get',
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     response: ({query}) => {
       const res = {
         ...baseRes
@@ -31,6 +31,13 @@ export default [
   },
   {
     url: '/api/resent-code',
+    method: 'post',
+    response: () => {
+      return {...baseRes}
+    }
+  },
+  {
+    url: '/api/submit-password',
     method: 'post',
     response: () => {
       return {...baseRes}

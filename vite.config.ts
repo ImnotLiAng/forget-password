@@ -9,5 +9,5 @@ export default defineConfig({
     enable: true, // 开启本地 mock 数据
     watchFiles: true,
   }),],
-  
+  base: './'
 })
